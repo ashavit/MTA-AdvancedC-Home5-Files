@@ -25,7 +25,7 @@ void paintTextPicture(TextPicture textPic, char* filename)
     while (cur)
     {
         // Ovewrride spaces with chars in place
-        rows[cur->data.position.y][cur->data.position.x] = cur->data.ch;
+        rows[cur->data.position.x][cur->data.position.y] = cur->data.ch;
         cur = cur->next;
     }
 
@@ -80,8 +80,8 @@ void replicatePicture(TextPicture srcPic, int m, int n, char* repPicFileName)
         {
             for (int j = 0; j < m; ++j)
             {
-                copyY = cur->data.position.y + srcPic.numRows * j;
-                copyX = cur->data.position.x + srcPic.numCols * i;
+                copyY = cur->data.position.y + srcPic.numCols * i;
+                copyX = cur->data.position.x + srcPic.numRows * j;
                 // printf("put %c from %d,%d at %d,%d\n", cur->data.ch, cur->data.position.y, cur->data.position.x, copyY, copyX);
                 rows[copyX][copyY] = cur->data.ch;
             }

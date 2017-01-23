@@ -22,7 +22,7 @@ void paintTextPicture(TextPicture textPic, char* filename)
     while (cur)
     {
         // Ovewrride spaces with chars in place
-        rows[cur->data.position.y][cur->data.position.x] = cur->data.ch;
+        rows[cur->data.position.x][cur->data.position.y] = cur->data.ch;
         cur = cur->next;
     }
 
