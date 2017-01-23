@@ -7,4 +7,6 @@
 void paintTextPicture(TextPicture textPic, char* filename);
 TextPicture * openTextPicture(char* filename);
 
+void replicatePicture(TextPicture srcPic, int m, int n, char* repPicFileName);
+
 #endif

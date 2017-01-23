@@ -8,9 +8,8 @@
 int main(int argc, char **argv)
 {
     TextPicture *picture = openTextPicture("Exe5Q4-B.txt");
-
-    printf("Final sorted List:\n");
-    printPicList(picture->pic);
+    // printPicList(picture->pic);
+    replicatePicture(*picture, 3, 2, "new rep.txt");
 
     freeTextPicture(picture);
     return 0;

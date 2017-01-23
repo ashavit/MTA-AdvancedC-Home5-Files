@@ -10,7 +10,6 @@ static char** allocateStringRowArray(unsigned int size);
 static char* allocateString(unsigned int size);
 static char* allocateSpacesString(unsigned int size);
 static void freeStringRowArray(char** array, unsigned int size);
-static int get(PicList *list, char *string, int row);
 static void readPicCharsFromString(PicList *list, char *string, int row);
 static void getPictureSize(FILE *filePtr, int *rows, int *cols, int *fileLength);
 
@@ -59,6 +58,44 @@ TextPicture * openTextPicture(char* fileName)
     closeFile(input);
 
     return picture;
+}
+
+void replicatePicture(TextPicture srcPic, int m, int n, char* repPicFileName)
+{
+    int row, col;
+    int multiCols = srcPic.numCols * n;
+    int multiRows = srcPic.numRows * m;
+    char **rows = allocateStringRowArray(multiRows);
+    // printf("I got %d rows, and %d cols\n", multiRows, multiCols);
+
+    for (row = 0; row < multiRows; ++row)
+        rows[row] = allocateSpacesString(multiCols);
+
+    PicListNode *cur = srcPic.pic.head;
+    int copyX, copyY;
+    while (cur)
+    {
+        // Ovewrride spaces with chars in place, for all replicated pictures
+        for (int i = 0; i < n; ++i)
+        {
+            for (int j = 0; j < m; ++j)
+            {
+                copyY = cur->data.position.y + srcPic.numRows * j;
+                copyX = cur->data.position.x + srcPic.numCols * i;
+                // printf("put %c from %d,%d at %d,%d\n", cur->data.ch, cur->data.position.y, cur->data.position.x, copyY, copyX);
+                rows[copyX][copyY] = cur->data.ch;
+            }
+        }
+        cur = cur->next;
+    }
+
+    // Save to painting to file
+    FILE *filePtr = openFile(repPicFileName, "w+");
+    for (row = 0; row < multiRows; ++row)
+        writeStringLine(rows[row], filePtr);
+
+    freeStringRowArray(rows, multiRows);
+    closeFile(filePtr);
 }
 
 static char** allocateStringRowArray(unsigned int size)
