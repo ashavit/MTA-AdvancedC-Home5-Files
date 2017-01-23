@@ -1,0 +1,142 @@
+#include <stdlib.h>
+#include <string.h>
+
+#include "PicFileManager.h"
+#include "PicListManager.h"
+#include "TextPictureManager.h"
+#include "FileFunctions.h"
+
+static char** allocateStringRowArray(unsigned int size);
+static char* allocateString(unsigned int size);
+static char* allocateSpacesString(unsigned int size);
+static void freeStringRowArray(char** array, unsigned int size);
+static int get(PicList *list, char *string, int row);
+static void readPicCharsFromString(PicList *list, char *string, int row);
+static void getPictureSize(FILE *filePtr, int *rows, int *cols, int *fileLength);
+
+void paintTextPicture(TextPicture textPic, char* filename)
+{
+    int row, col;
+    char **rows = allocateStringRowArray(textPic.numRows);
+
+    for (row = 0; row < textPic.numRows; ++row)
+        rows[row] = allocateSpacesString(textPic.numCols);
+
+    PicListNode *cur = textPic.pic.head;
+    while (cur)
+    {
+        // Ovewrride spaces with chars in place
+        rows[cur->data.position.y][cur->data.position.x] = cur->data.ch;
+        cur = cur->next;
+    }
+
+    // Save to painting to file
+    FILE *filePtr = openFile(filename, "w");
+    for (row = 0; row < textPic.numRows; ++row)
+        writeStringLine(rows[row], filePtr);
+
+    freeStringRowArray(rows, textPic.numRows);
+    closeFile(filePtr);
+}
+
+TextPicture * openTextPicture(char* fileName)
+{
+    FILE *input = openFile(fileName, "r");
+    int lineLength;
+
+    TextPicture *picture = allocateTextPicture();
+    getPictureSize(input, &picture->numRows, &picture->numCols, &lineLength);
+    // printf("I got %d rows, and %d cols, with line length %d\n", picture->numRows, picture->numCols, lineLength);
+
+    char *row = allocateString(lineLength + 1);
+    for (int i = 0; i < picture->numRows; ++i)
+    {
+        readStringLine(row, lineLength + 1, input); /* Read line until \n or full fileSize */
+        readPicCharsFromString(&picture->pic, row, i);
+    }
+
+    free(row);
+    closeFile(input);
+
+    return picture;
+}
+
+static char** allocateStringRowArray(unsigned int size)
+{
+    char **array = (char**)malloc(sizeof(char*) * size);
+    if (!array)
+    {
+        printf("Error malloc");
+        exit(MALLOC_ERROR);
+    }
+    return array;
+}
+
+static char* allocateString(unsigned int size)
+{
+    char *string = (char*)malloc(sizeof(char) * size);
+    if (!string)
+    {
+        printf("Error malloc");
+        exit(MALLOC_ERROR);
+    }
+    return string;
+}
+
+static char* allocateSpacesString(unsigned int size)
+{
+    // Create line with full spaces
+    char *string = allocateString(size + 1);
+    for (int i = 0; i < size; ++i)
+    {
+        string[i] = ' ';
+    }
+    string[size] = '\n';
+
+    return string;
+}
+
+static void freeStringRowArray(char** array, unsigned int size)
+{
+    if (!array)
+        return;
+
+    for (int i = 0; i < size; ++i)
+    {
+        free(array[i]);
+    }
+    free(array);
+}
+
+static void readPicCharsFromString(PicList *list, char *string, int row)
+{
+    int i = 0;
+    while (string[i] != '\n')
+    {
+        if (string[i] > ' ')
+            addPicListChar(list, string[i], row, i);
+        ++i;
+    }
+}
+
+static void getPictureSize(FILE *filePtr, int *rows, int *cols, int *fileLength)
+{
+    unsigned long fileSize = getFileSize(filePtr);
+    *fileLength = fileSize;
+    gotoFileStart(filePtr);
+    // printf("I got %ld size\n", fileSize);
+
+    char *firstRow = allocateString((int)fileSize);
+    readStringLine(firstRow, (int)fileSize, filePtr);
+    // printf("read line: %s\n", firstRow);;
+
+    int lineLength = strlen(firstRow);
+    *rows = fileSize / lineLength;
+    int i = lineLength - 1;
+    while (firstRow[i] < ' ') /* Find any new lines, CR, End, etc. */
+        --i;
+
+    *cols = i + 1;
+    free(firstRow);
+    gotoFileStart(filePtr);
+}
