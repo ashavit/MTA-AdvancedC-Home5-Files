@@ -7,9 +7,14 @@
 
 int main(int argc, char **argv)
 {
-    TextPicture *picture = openTextPicture("Exe5Q4-B.txt");
+    TextPicture *picture = openTextPicture("big.txt");
     // printPicList(picture->pic);
-    replicatePicture(*picture, 3, 2, "new rep.txt");
+
+    mergePictures(picture, "small.txt");
+    printf("big after merge:\n" );
+    printPicList(picture->pic);
+
+    paintTextPicture(*picture, "merged.txt");
 
     freeTextPicture(picture);
     return 0;

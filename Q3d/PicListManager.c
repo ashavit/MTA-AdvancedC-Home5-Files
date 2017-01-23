@@ -54,6 +54,13 @@ void addPicListChar(PicList *list, char data, int x, int y)
             addToBeginningOfList(list, node);
         else if (prev == list->tail)
             addToEndOfList(list, node);
+        else if (prev->next->data.position.x == x && prev->next->data.position.y == y)
+        {
+            // Override char in place and release unused node
+            // printf("Override char at %d,%d\n", x,y);
+            prev->next->data.ch = data;
+            free(node);
+        }
         else
             addInsideList(prev, node);
     }

@@ -25,7 +25,7 @@ void paintTextPicture(TextPicture textPic, char* filename)
     while (cur)
     {
         // Ovewrride spaces with chars in place
-        rows[cur->data.position.y][cur->data.position.x] = cur->data.ch;
+        rows[cur->data.position.x][cur->data.position.y] = cur->data.ch;
         cur = cur->next;
     }
 
@@ -96,6 +96,25 @@ void replicatePicture(TextPicture srcPic, int m, int n, char* repPicFileName)
 
     freeStringRowArray(rows, multiRows);
     closeFile(filePtr);
+}
+
+void mergePictures(TextPicture* bigPic, char* smallPicFileName)
+{
+    TextPicture *small = openTextPicture(smallPicFileName);
+    // printf("small pic loaded:\n" );
+    // printPicList(small->pic);
+
+    int xShift = bigPic->numCols - small->numCols;
+    int yShift = bigPic->numRows - small->numRows;
+
+    PicListNode *cur = small->pic.head;
+    while (cur)
+    {
+        addPicListChar(&bigPic->pic, cur->data.ch, yShift + cur->data.position.y, xShift + cur->data.position.x);
+        cur = cur->next;
+    }
+
+    freeTextPicture(small);
 }
 
 static char** allocateStringRowArray(unsigned int size)
