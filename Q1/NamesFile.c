@@ -32,7 +32,7 @@ char** readBinaryNamesFile(const char* fileName, unsigned int count)
 void saveNamesFile(const char *baseName, char **names, unsigned int size)
 {
     char *textNameFile = allocateString(strlen(baseName) + 5);
-    sprintf(textNameFile, "%s%s\n", baseName, ".txt");
+    sprintf(textNameFile, "%s%s", baseName, ".txt");
 
     FILE *save = openFile(textNameFile, "w");
 
