@@ -22,6 +22,11 @@ static GradeIndexList createGradeIndexList();
 static void clearGradeIndexList(GradeIndexList list);
 static GradeIndexNode* allocateListNode(int avg, unsigned int index);
 static char* allocateString(unsigned int size);
+static char** allocateStringArray(unsigned int size);
+static void reallocateStringArray(char*** array, unsigned int size);
+
+static void addStringToStringArray(char *string, char*** array, unsigned int *size, unsigned int *memSize);
+static void doubleStringArray(char*** array, unsigned int *size);
 
 static GradeIndexList sortIndexStudentsByGrade(FILE *input, short int size);
 static void printGradeIndexList(GradeIndexList list);
@@ -31,6 +36,7 @@ static void addToBeginningOfList(GradeIndexList *list, GradeIndexNode *node);
 static void addToEndOfList(GradeIndexList *list, GradeIndexNode *node);
 static void addInsideList(GradeIndexNode *prev, GradeIndexNode *node);
 static GradeIndexNode* findPlaceToInsertGrade(GradeIndexList *list, int avg);
+static FILE* getIndexFileForDataBase(const char* dbFileName, char *rights);
 
 void sortStudentIndexesForFile(const char* fileName)
 {
@@ -43,10 +49,7 @@ void sortStudentIndexesForFile(const char* fileName)
     printGradeIndexList(list);
     closeFile(input);
 
-    char *indexFileName = allocateString(strlen(fileName) + 5);
-    sprintf(indexFileName, "%s%s", fileName, ".ind");
-    FILE *output = openFile(indexFileName, "wb");
-	free(indexFileName);
+    FILE *output = getIndexFileForDataBase(fileName, "wb");
 
 	// Save indexes to index bin file
     GradeIndexNode *node = list.head;
@@ -58,6 +61,55 @@ void sortStudentIndexesForFile(const char* fileName)
 
     clearGradeIndexList(list);
     closeFile(output);
+}
+
+char ** findAverageGrade(char* database, int avgGrade, int * resSize)
+{
+	// Load bin data file
+    FILE *dbFile = openFile(database, "rb");
+
+	// Get student max count
+    short int studentCount;
+    binReadShortInt(&studentCount, 1, dbFile);
+
+	// Load index data file
+	FILE *indexFile = getIndexFileForDataBase(database, "rb");
+
+	unsigned int index;
+	short int nameLength;
+	int avg = 0;
+	unsigned int arrSize = 0, memSize = 0;
+	char **result = NULL;
+	for (int i = 0; i < studentCount && avg <= avgGrade; ++i)
+	{
+		binReadUnsignedInt(&index, 1, indexFile); /*Get next sorted index */
+		fseek(dbFile, index, SEEK_SET); /* Skip to student by sorted index */
+		binReadShortInt(&nameLength, 1, dbFile); /* Read student name length */
+        fseek(dbFile, nameLength, SEEK_CUR); /* Skip name to check grade */
+        binReadInt(&avg, 1, dbFile); /* Read student grade */
+
+		if (avg == avgGrade)
+		{
+			fseek(dbFile, -(sizeof(int) + nameLength), SEEK_CUR); /* Rewind back name and grade */
+			char *name = allocateString(nameLength + 1);
+			binReadString(name, nameLength, dbFile);
+			name[nameLength] = '\0';
+
+			addStringToStringArray(name, &result, &arrSize, &memSize);
+		}
+	}
+
+	*resSize = arrSize;
+	return result;
+}
+
+static FILE* getIndexFileForDataBase(const char* dbFileName, char *rights)
+{
+    char *indexFileName = allocateString(strlen(dbFileName) + 5);
+    sprintf(indexFileName, "%s%s", dbFileName, ".ind");
+    FILE *res = openFile(indexFileName, rights);
+	free(indexFileName);
+	return res;
 }
 
 static GradeIndexList sortIndexStudentsByGrade(FILE *input, short int size)
@@ -185,8 +237,51 @@ static char* allocateString(unsigned int size)
     char *string = (char*)malloc(sizeof(char) * size);
     if (!string)
     {
-        printf("Error malloc");
+        printf("Error malloc\n");
         exit(MALLOC_ERROR);
     }
     return string;
+}
+
+static char** allocateStringArray(unsigned int size)
+{
+	char **array = (char**)malloc(sizeof(char*));
+	if (!array)
+	{
+		printf("Error Malloc\n");
+		exit(MALLOC_ERROR);
+	}
+	return array;
+}
+
+static void reallocateStringArray(char*** array, unsigned int size)
+{
+	char **newPtr = (char**)realloc(*array, sizeof(char*) * size);
+	if (!newPtr)
+	{
+		printf("Error Realloc\n");
+		exit(MALLOC_ERROR);
+	}
+	*array = newPtr;
+}
+
+static void addStringToStringArray(char *string, char*** array, unsigned int *size, unsigned int *memSize)
+{
+	if (*memSize == 0)
+	{
+		*memSize = 1;
+		*array = allocateStringArray(*memSize);
+	}
+	else if (*size == *memSize)
+	{
+		doubleStringArray(array, memSize);
+	}
+	*array[(*size)++] = string;
+}
+
+static void doubleStringArray(char*** array, unsigned int *size)
+{
+	int newSize = *size * 2;
+	reallocateStringArray(array, newSize);
+	*size = newSize;
 }

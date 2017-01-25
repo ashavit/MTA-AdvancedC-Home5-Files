@@ -12,7 +12,7 @@ FILE* openFile(const char* fileName, char *rights)
     FILE *filePtr = fopen(fileName, rights);
     if (!filePtr)
     {
-        printf("Error opening file");
+        printf("Error opening file %s for %s\n", fileName, rights);
         exit(READ_FILE_ERROR);
     }
     return filePtr;

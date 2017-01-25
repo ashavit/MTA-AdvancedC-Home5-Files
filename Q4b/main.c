@@ -30,6 +30,9 @@ void printNames(char **records,int size)
 
 void freeRecords(char **records,int size)
 {
+    if (!records)
+        return;
+
 	for (int i = 0; i < size; i++)
 		free(records[i]);
     free(records);
